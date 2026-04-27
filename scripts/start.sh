@@ -32,9 +32,9 @@ if [[ ! -d "$REPO/node_modules" ]]; then
   cd "$REPO" && npm install
 fi
 
-# ── 4. Clone faster-whisper if missing ──────────────────────────────────────
+# ── 4. faster-whisper is vendored into the repo (vendor/faster-whisper) ────
 if [[ ! -d "$VENDOR_FW" ]]; then
-  echo "Cloning faster-whisper..."
+  echo "WARNING: vendor/faster-whisper missing — re-cloning from upstream..."
   mkdir -p "$REPO/vendor"
   git clone --depth=1 https://github.com/SYSTRAN/faster-whisper.git "$VENDOR_FW"
 fi
