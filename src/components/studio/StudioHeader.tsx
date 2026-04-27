@@ -13,6 +13,14 @@ export function StudioHeader() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-4 border-b border-border/60 bg-background/70 px-6 backdrop-blur-xl">
+      <button
+        onClick={() => navigate("/")}
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Exit Studio
+      </button>
+
       <div className="flex items-center gap-2">
         <span className="font-mono text-sm text-primary">//</span>
         <span className="text-lg font-bold tracking-tight text-foreground">hyvmind</span>
@@ -20,13 +28,6 @@ export function StudioHeader() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <button
-          onClick={() => navigate("/")}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Exit Studio
-        </button>
         <SignedIn>
           <UserButton
             afterSignOutUrl="/signin"
