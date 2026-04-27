@@ -89,13 +89,20 @@ All colors MUST be HSL.
     background-image: none;
   }
 
-  /* Lock the family to Poppins everywhere, but allow Tailwind weight utilities
-   * (font-bold / font-semibold / font-extrabold) to actually take effect so
-   * typographic hierarchy reads correctly. */
+  /* Lock the family to Poppins everywhere.
+   * Only weights 400 (regular) + 500 (medium) are loaded from Google Fonts.
+   * font-synthesis: none prevents the browser from artificially bolding text
+   * beyond what Poppins actually provides at these two weights. */
   *,
   *::before,
   *::after {
     font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    font-synthesis: none;
+  }
+
+  /* Headings and emphasis → medium (500); body → regular (400). */
+  h1, h2, h3, h4, h5, h6, strong, b, th {
+    font-weight: 500;
   }
 }
 
@@ -150,9 +157,12 @@ All colors MUST be HSL.
   /* Glowing gradient border using mask compositing */
   .neon-border {
     position: relative;
-    background: hsl(0 0% 3%);
+    background: hsl(222 60% 6% / 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border-radius: var(--radius);
   }
+  /* 1-px gradient border */
   .neon-border::before {
     content: "";
     position: absolute;
@@ -165,14 +175,15 @@ All colors MUST be HSL.
             mask-composite: exclude;
     pointer-events: none;
   }
+  /* Outer blur halo */
   .neon-border::after {
     content: "";
     position: absolute;
     inset: -1px;
     border-radius: inherit;
     background: var(--neon-gradient, var(--gradient-neon));
-    filter: blur(22px);
-    opacity: 0.55;
+    filter: blur(28px);
+    opacity: 0.45;
     z-index: -1;
     pointer-events: none;
   }

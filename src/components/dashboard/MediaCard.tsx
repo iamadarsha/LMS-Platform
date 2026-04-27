@@ -144,7 +144,7 @@ export function ResourceCard({ item }: { item: ResourceItem }) {
   const description = item.description?.trim() || "No description provided yet.";
   const thumbnail = useResolvedAsset(item.thumbnail);
   return (
-    <article className="group card-lift flex h-full flex-col overflow-hidden rounded-[2rem] border border-primary/70 bg-background">
+    <article className="group neon-border neon-violet card-lift flex h-full flex-col overflow-hidden">
       <div className="relative aspect-[16/9] overflow-hidden bg-muted/30">
         {thumbnail && (
           <img
@@ -167,7 +167,7 @@ export function ResourceCard({ item }: { item: ResourceItem }) {
         <div className="h-full rounded-r-full bg-gradient-cyan" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 bg-background px-7 py-6">
+      <div className="flex flex-1 flex-col gap-4 px-7 py-6">
         <h3 className="line-clamp-2 font-bold leading-tight tracking-tight text-foreground text-2xl">
           {item.title}
         </h3>
