@@ -27,10 +27,10 @@ def _get_whisper_model():
 
     from faster_whisper import WhisperModel
 
-    # Default to `medium` for top-grade quality on CPU. Set WHISPER_MODEL=small
-    # (or `tiny`) in .env to trade quality for speed, or `large-v3` for the
-    # absolute best (requires more RAM/VRAM and is slower on CPU).
-    model_size = os.environ.get("WHISPER_MODEL", "medium")
+    # `small` strikes the best quality/speed balance on CPU: ~5x faster than
+    # `medium` with marginal accuracy loss when paired with beam_size=5.
+    # Set WHISPER_MODEL=medium (or large-v3) in .env if you have a GPU.
+    model_size = os.environ.get("WHISPER_MODEL", "small")
     device = os.environ.get("WHISPER_DEVICE", "auto")
     compute_type = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
     log.info("Loading faster-whisper model=%s device=%s compute=%s", model_size, device, compute_type)
@@ -71,11 +71,13 @@ def _transcribe_with_whisper(audio_path: Path, *, hint: str = "") -> dict[str, A
         if clean:
             initial_prompt = clean[:200]
 
+    # beam_size=5 is the single biggest quality lever; word_timestamps and
+    # best_of double the runtime each with marginal extra accuracy, so they
+    # stay off by default. Override with WHISPER_BEAM_SIZE if needed.
+    beam_size = int(os.environ.get("WHISPER_BEAM_SIZE", "5"))
     segments_iter, info = model.transcribe(
         str(audio_path),
-        beam_size=5,
-        best_of=5,
-        word_timestamps=True,
+        beam_size=beam_size,
         vad_filter=True,
         vad_parameters={
             "min_silence_duration_ms": 500,
