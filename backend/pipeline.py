@@ -27,7 +27,10 @@ def _get_whisper_model():
 
     from faster_whisper import WhisperModel
 
-    model_size = os.environ.get("WHISPER_MODEL", "small")
+    # Default to `medium` for top-grade quality on CPU. Set WHISPER_MODEL=small
+    # (or `tiny`) in .env to trade quality for speed, or `large-v3` for the
+    # absolute best (requires more RAM/VRAM and is slower on CPU).
+    model_size = os.environ.get("WHISPER_MODEL", "medium")
     device = os.environ.get("WHISPER_DEVICE", "auto")
     compute_type = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
     log.info("Loading faster-whisper model=%s device=%s compute=%s", model_size, device, compute_type)
@@ -48,41 +51,84 @@ def _ffmpeg_extract_audio(src: Path, dst: Path) -> None:
         raise RuntimeError(f"ffmpeg failed: {proc.stderr.strip()[:500]}")
 
 
-def _transcribe_with_whisper(audio_path: Path) -> dict[str, Any]:
+def _transcribe_with_whisper(audio_path: Path, *, hint: str = "") -> dict[str, Any]:
+    """Production-grade Whisper transcription.
+
+    Quality knobs:
+      - beam_size=5 + best_of=5: full beam search instead of greedy decode
+      - word_timestamps=True: per-word timing for accurate UI sync
+      - VAD filter with speech padding: trims silence without clipping speech
+      - condition_on_previous_text: consistent terminology across the file
+      - initial_prompt: biases vocabulary toward the user-supplied title
+      - default temperature fallback ladder kicks in on hallucination
+    """
     model = _get_whisper_model()
+
+    # Trim/clean any user-supplied hint so it can bias proper-noun spelling.
+    initial_prompt: Optional[str] = None
+    if hint:
+        clean = re.sub(r"[^A-Za-z0-9\s.,'\-]", " ", hint).strip()
+        if clean:
+            initial_prompt = clean[:200]
+
     segments_iter, info = model.transcribe(
         str(audio_path),
-        beam_size=1,
+        beam_size=5,
+        best_of=5,
+        word_timestamps=True,
         vad_filter=True,
-        vad_parameters={"min_silence_duration_ms": 500},
+        vad_parameters={
+            "min_silence_duration_ms": 500,
+            "speech_pad_ms": 200,
+        },
+        condition_on_previous_text=True,
+        initial_prompt=initial_prompt,
     )
-    segments = []
+    segments: list[dict[str, Any]] = []
     text_parts: list[str] = []
     for seg in segments_iter:
+        text = (seg.text or "").strip()
+        if not text:
+            continue
         segments.append({
             "start": round(float(seg.start), 3),
             "end": round(float(seg.end), 3),
-            "text": seg.text.strip(),
+            "text": text,
         })
-        text_parts.append(seg.text.strip())
+        text_parts.append(text)
     return {
         "language": getattr(info, "language", None),
+        "language_probability": round(float(getattr(info, "language_probability", 0.0)), 3),
+        "duration": round(float(getattr(info, "duration", 0.0)), 3),
         "segments": segments,
         "text": " ".join(text_parts).strip(),
     }
 
 
-_GEMINI_TRANSCRIBE_PROMPT = (
-    "Transcribe this audio file verbatim. "
-    "Return a single JSON object (no prose, no markdown fences) with these keys:\n"
-    '{"language": "en", "text": "full transcript as one string", '
-    '"segments": [{"start": 0.0, "end": 5.0, "text": "segment text"}, ...]}\n'
-    "Estimate timestamps as best you can — divide the total duration evenly if unsure. "
-    "Keep each segment 5-15 seconds. Language should be the BCP-47 code (e.g. 'en', 'hi', 'es')."
-)
+_GEMINI_TRANSCRIBE_PROMPT = """You are a professional transcriptionist. Transcribe this audio file verbatim.
+
+REQUIREMENTS:
+1. Capture every spoken word exactly as said — do not paraphrase, summarise, or correct grammar.
+2. Preserve filler words (um, uh, like) only when they carry meaning; otherwise drop them.
+3. Use proper sentence-case punctuation (periods, commas, question marks). No ALL CAPS unless the speaker emphasises.
+4. For inaudible passages write [inaudible]. For non-speech write [music], [laughter], [silence].
+5. Spell technical terms, brand names, and proper nouns correctly.
+6. Break the transcript into natural segments at sentence boundaries. Each segment 4–12 seconds long.
+7. Timestamps must reflect actual speech timing — listen carefully, do not divide the duration evenly.
+8. Detect the dominant spoken language and return its BCP-47 code (en, hi, es, fr, de, ja, etc.).
+
+Return a SINGLE JSON object (no prose, no markdown fences):
+{
+  "language": "<bcp47>",
+  "text": "<full verbatim transcript joined with spaces>",
+  "segments": [
+    {"start": 0.0, "end": 4.2, "text": "<segment text>"},
+    {"start": 4.2, "end": 9.8, "text": "<next segment>"}
+  ]
+}"""
 
 
-def _transcribe_with_gemini_audio(audio_path: Path) -> dict[str, Any]:
+def _transcribe_with_gemini_audio(audio_path: Path, *, hint: str = "") -> dict[str, Any]:
     """Fallback transcription via Gemini Files API when Whisper is unavailable."""
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -99,15 +145,21 @@ def _transcribe_with_gemini_audio(audio_path: Path) -> dict[str, Any]:
         config=genai_types.UploadFileConfig(mime_type="audio/wav", display_name=audio_path.name),
     )
 
+    prompt = _GEMINI_TRANSCRIBE_PROMPT
+    if hint:
+        prompt += (
+            f"\n\nVOCAB HINT (user-supplied title — use to spell proper nouns correctly):\n{hint}"
+        )
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[
             genai_types.Part.from_uri(file_uri=uploaded.uri, mime_type="audio/wav"),
-            _GEMINI_TRANSCRIBE_PROMPT,
+            prompt,
         ],
         config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
-            temperature=0.1,
+            temperature=0.0,
         ),
     )
 
@@ -118,7 +170,6 @@ def _transcribe_with_gemini_audio(audio_path: Path) -> dict[str, Any]:
         pass
 
     raw = _coerce_json((response.text or "").strip())
-    # Normalise to standard shape
     return {
         "language": raw.get("language") or "en",
         "segments": raw.get("segments") or [],
@@ -126,22 +177,27 @@ def _transcribe_with_gemini_audio(audio_path: Path) -> dict[str, Any]:
     }
 
 
-def _transcribe(audio_path: Path) -> dict[str, Any]:
-    """Transcribe audio: Whisper first, Gemini as automatic fallback."""
+def _transcribe(audio_path: Path, *, hint: str = "") -> dict[str, Any]:
+    """Transcribe audio: Whisper first, Gemini as automatic fallback.
+
+    Both engines receive the user-supplied title as a vocab hint so proper
+    nouns (people, products, technical terms) are spelled correctly.
+    """
     try:
-        result = _transcribe_with_whisper(audio_path)
-        log.info("Whisper transcription succeeded")
+        result = _transcribe_with_whisper(audio_path, hint=hint)
+        n = len(result.get("segments", []))
+        lang = result.get("language") or "?"
+        prob = result.get("language_probability") or 0
+        log.info("Whisper succeeded — %d segments, language=%s (%.2f)", n, lang, prob)
         return result
     except Exception as whisper_err:
-        log.warning("Whisper transcription failed (%s) — falling back to Gemini", whisper_err)
+        log.warning("Whisper failed (%s) — falling back to Gemini", whisper_err)
         try:
-            result = _transcribe_with_gemini_audio(audio_path)
+            result = _transcribe_with_gemini_audio(audio_path, hint=hint)
             log.info("Gemini transcription fallback succeeded")
-            # Tag the language to indicate it was Gemini-transcribed
             result["_source"] = "gemini_fallback"
             return result
         except Exception as gemini_err:
-            # Both failed — raise a combined error that includes both messages
             raise RuntimeError(
                 f"Whisper: {whisper_err} | Gemini fallback: {gemini_err}"
             ) from gemini_err
@@ -295,7 +351,10 @@ def run_job(job_id: str) -> None:
 
         # 2. Transcribe (Whisper primary, Gemini fallback)
         db.update_contribution(job_id, status="transcribing", stage_label="Transcribing audio", progress=42)
-        result = _transcribe(audio_path)
+        # Pass the user-supplied title (and original filename) as a vocabulary
+        # hint so proper nouns and technical terms are spelled correctly.
+        hint = " ".join(filter(None, [job.title, job.original_file_name]))[:200]
+        result = _transcribe(audio_path, hint=hint)
         used_fallback = result.pop("_source", None) == "gemini_fallback"
         stage = "Transcribed via Gemini (Whisper unavailable)" if used_fallback else "Transcribed"
         transcript_text = _render_pretty_transcript(result["segments"]) or result["text"]
