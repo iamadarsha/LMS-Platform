@@ -1,0 +1,1 @@
+UPDATE public.contributions SET thumbnail = REPLACE(thumbnail, '/src/assets/thumbnails/', '/thumbnails/') WHERE thumbnail LIKE '/src/assets/thumbnails/%';

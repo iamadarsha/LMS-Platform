@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Hyvemind — deep navy blueprint */
+    --background: 222 70% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 222 60% 6%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 222 60% 6%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 215 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 195 100% 60%;
+
+    --secondary: 222 50% 9%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 222 50% 8%;
+    --muted-foreground: 220 20% 65%;
+
+    --accent: 215 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 40% 14%;
+    --input: 222 50% 9%;
+    --ring: 215 100% 60%;
+
+    --radius: 1.25rem;
+
+    /* Neon accent palette */
+    --neon-cyan: 195 100% 60%;
+    --neon-pink: 320 100% 70%;
+    --neon-violet: 252 100% 65%;
+
+    /* Sidebar tokens */
+    --sidebar-background: 222 75% 3%;
+    --sidebar-foreground: 220 20% 72%;
+    --sidebar-primary: 215 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 45% 14%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 40% 12%;
+    --sidebar-ring: 215 100% 60%;
+
+    /* Brand gradients & glows — blue→violet (extracted from reference) */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(258 90% 56%) 100%);
+    --gradient-neon: linear-gradient(135deg, hsl(195 100% 60%), hsl(217 91% 60%), hsl(258 90% 56%));
+    --gradient-cyan: linear-gradient(135deg, hsl(195 100% 60%), hsl(217 91% 60%));
+    --gradient-pink: linear-gradient(135deg, hsl(258 90% 56%), hsl(280 90% 60%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 6%), hsl(0 0% 3%));
+
+    /* Subtle blueprint grid background */
+    --grid-line: hsl(210 100% 70% / 0.06);
+
+    --shadow-glow: 0 0 60px -10px hsl(258 90% 56% / 0.55);
+    --shadow-cyan: 0 0 50px -8px hsl(217 91% 60% / 0.6);
+    --shadow-pink: 0 0 50px -8px hsl(258 90% 56% / 0.6);
+    --shadow-violet: 0 0 50px -8px hsl(258 90% 56% / 0.6);
+    --shadow-card: 0 20px 60px -20px hsl(0 0% 0% / 0.8);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    font-feature-settings: "ss01", "cv11";
+    background-color: hsl(var(--background));
+    background-image: none;
+  }
+
+  /* Lock the family to Poppins everywhere, but allow Tailwind weight utilities
+   * (font-bold / font-semibold / font-extrabold) to actually take effect so
+   * typographic hierarchy reads correctly. */
+  *,
+  *::before,
+  *::after {
+    font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-card {
+    background-image: var(--gradient-card);
+  }
+
+  .bg-gradient-neon {
+    background-image: var(--gradient-neon);
+  }
+
+  .bg-gradient-cyan {
+    background-image: var(--gradient-cyan);
+  }
+
+  .bg-gradient-pink {
+    background-image: var(--gradient-pink);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-cyan {
+    box-shadow: var(--shadow-cyan);
+  }
+
+  .shadow-pink {
+    box-shadow: var(--shadow-pink);
+  }
+
+  .shadow-violet {
+    box-shadow: var(--shadow-violet);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Glowing gradient border using mask compositing */
+  .neon-border {
+    position: relative;
+    background: hsl(0 0% 3%);
+    border-radius: var(--radius);
+  }
+  .neon-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--neon-gradient, var(--gradient-neon));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .neon-border::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--neon-gradient, var(--gradient-neon));
+    filter: blur(22px);
+    opacity: 0.55;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .neon-cyan { --neon-gradient: var(--gradient-cyan); }
+  .neon-pink { --neon-gradient: var(--gradient-pink); }
+  .neon-violet { --neon-gradient: var(--gradient-primary); }
+
+  /* Reduced backdrop glow for subtle cards */
+  .neon-subtle::after {
+    opacity: 0.15;
+    filter: blur(14px);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Animated blueprint background */
+  .blueprint-bg {
+    position: relative;
+    isolation: isolate;
+    background-color: hsl(222 75% 4%);
+    overflow: hidden;
+  }
+  .blueprint-bg::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -2;
+    background-image:
+      linear-gradient(to right, hsl(210 100% 65% / 0.18) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(210 100% 65% / 0.18) 1px, transparent 1px);
+    background-size: 280px 280px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 90%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 90%);
+    animation: grid-drift 30s linear infinite;
+  }
+  .blueprint-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(600px 400px at 20% 30%, hsl(220 100% 50% / 0.18), transparent 70%),
+      radial-gradient(700px 500px at 80% 70%, hsl(252 100% 60% / 0.15), transparent 70%),
+      radial-gradient(500px 400px at 50% 100%, hsl(195 100% 55% / 0.12), transparent 70%);
+    animation: aurora-shift 18s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  /* Crosshair sparkles */
+  .blueprint-spark {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      linear-gradient(to right, transparent 49.5%, hsl(210 100% 75% / 0.9) 50%, transparent 50.5%),
+      linear-gradient(to bottom, transparent 49.5%, hsl(210 100% 75% / 0.9) 50%, transparent 50.5%);
+    mask-image: radial-gradient(circle, #000 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 70%);
+    filter: drop-shadow(0 0 6px hsl(210 100% 70% / 0.8));
+    animation: spark-twinkle 4s ease-in-out infinite;
+  }
+
+  @keyframes grid-drift {
+    0%   { background-position: 0 0, 0 0; }
+    100% { background-position: 280px 280px, 280px 280px; }
+  }
+  @keyframes aurora-shift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; }
+    50%  { transform: translate3d(2%, -2%, 0) scale(1.05); opacity: 1; }
+    100% { transform: translate3d(-2%, 2%, 0) scale(1); opacity: 0.85; }
+  }
+  @keyframes spark-twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(0.9); }
+    50%      { opacity: 1;   transform: scale(1.05); }
+  }
+
+  /* Card lift — used on hover for media/resource cards. Soft spring-out feel. */
+  .card-lift {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 220ms ease;
+    will-change: transform;
+  }
+  .card-lift:hover {
+    transform: translateY(-4px) scale(1.015);
+    box-shadow: 0 24px 60px -22px hsl(0 0% 0% / 0.85),
+                0 0 0 1px hsl(var(--primary) / 0.35);
+  }
+
+  /* Section / card entrance — start hidden, animate up + fade in.
+   * Cards inside .reveal-stack get a 40ms-per-child stagger via nth-child. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+                transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.in-view {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal-stack > * {
+    opacity: 0;
+  }
+  /* Stagger plays only after the parent .reveal section enters the viewport,
+   * so cards don't burn their entrance off-screen on initial page load. */
+  .reveal.in-view .reveal-stack > *,
+  .in-view > .reveal-stack > * {
+    animation: card-stagger 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .reveal-stack > *:nth-child(1)  { animation-delay:  40ms; }
+  .reveal-stack > *:nth-child(2)  { animation-delay:  80ms; }
+  .reveal-stack > *:nth-child(3)  { animation-delay: 120ms; }
+  .reveal-stack > *:nth-child(4)  { animation-delay: 160ms; }
+  .reveal-stack > *:nth-child(5)  { animation-delay: 200ms; }
+  .reveal-stack > *:nth-child(6)  { animation-delay: 240ms; }
+  .reveal-stack > *:nth-child(7)  { animation-delay: 280ms; }
+  .reveal-stack > *:nth-child(8)  { animation-delay: 320ms; }
+  .reveal-stack > *:nth-child(9)  { animation-delay: 360ms; }
+  .reveal-stack > *:nth-child(n+10) { animation-delay: 400ms; }
+  @keyframes card-stagger {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Honor user motion preferences — disable atmospheric and entrance motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .blueprint-bg::before,
+    .blueprint-bg::after,
+    .blueprint-spark {
+      animation: none !important;
+    }
+    .reveal,
+    .reveal-stack > * {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+    .card-lift {
+      transition: none !important;
+    }
+    .card-lift:hover {
+      transform: none !important;
+    }
+  }
+}
