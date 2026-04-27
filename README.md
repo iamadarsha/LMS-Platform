@@ -129,42 +129,53 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for service topology, data fl
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js ≥ 18
-- Python ≥ 3.10
-- ffmpeg (`brew install ffmpeg`)
-- A Clerk app, Supabase project, Neon database, Cloudflare R2 bucket, Upstash Redis instance, and Gemini API key. See [`.env.example`](.env.example) for the full list.
-
-### One-command boot
+### One command on a fresh Mac
 
 ```bash
 git clone https://github.com/iamadarsha/LMS-Platform.git
 cd LMS-Platform
-cp .env.example .env       # fill in your credentials
-bash scripts/start.sh
+cp .env.example .env        # fill in your credentials (see below)
+bash setup.sh
 ```
 
-This installs dependencies, sets up the backend venv, starts FastAPI on `127.0.0.1:8787`, and opens Vite on `localhost:8080`.
+That's it. `setup.sh` will:
 
-### Manual
+1. Install Homebrew if missing
+2. Install **Node.js**, **Python 3**, and **ffmpeg** via brew
+3. Install all frontend (`npm install`) and backend (`pip install`) dependencies
+4. Create the Python virtualenv at `backend/.venv`
+5. Validate your `.env` (warns on placeholders)
+6. Start the **FastAPI backend** on `127.0.0.1:8787`
+7. Start the **Vite dev server** on `localhost:8080`
+8. Open your browser automatically
 
-```bash
-# Frontend
-npm install && npm run dev
+Press `Ctrl+C` to stop both services cleanly.
 
-# Backend (in another shell)
-cd backend
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python main.py
-```
+> **Subsequent runs** are instant — `bash setup.sh --run` skips bootstrap and just starts the services.
+> **Bootstrap only** (no run) — `bash setup.sh --setup`
+
+### 🔑 Where to get each credential
+
+`.env.example` has every credential documented inline with dashboard links. TL;DR:
+
+| Service | Dashboard | What you need |
+|---------|-----------|---------------|
+| **Clerk** (auth) | [dashboard.clerk.com](https://dashboard.clerk.com) → API Keys | Publishable + Secret + Frontend API URL |
+| **Supabase** (public feed) | [supabase.com/dashboard](https://supabase.com/dashboard) → Settings → API | Project URL + anon key |
+| **Gemini** (AI) | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) | API key |
+| **Neon** (Postgres) | [console.neon.tech](https://console.neon.tech) → Connection Details | Pooled connection string |
+| **Upstash** (Redis) | [console.upstash.com](https://console.upstash.com) → REST API | REST URL + token |
+| **Cloudflare R2** (video) | [dash.cloudflare.com](https://dash.cloudflare.com) → R2 → API Tokens | Account ID + Access Key + Secret |
 
 ### Apply Supabase migrations
 
+The first time you connect a fresh Supabase project, run:
+
 ```bash
-SUPABASE_PAT=sbp_...  SUPABASE_PROJECT_REF=...  bash scripts/apply-migrations.sh
+SUPABASE_PAT=sbp_...  SUPABASE_PROJECT_REF=YOUR-REF  bash scripts/apply-migrations.sh
 ```
 
-(Uses the Supabase Management API — no DB password required.)
+This applies all 8 migrations (contributions, watch_progress, profiles, transcript columns) via the Management API — no DB password needed.
 
 ---
 
