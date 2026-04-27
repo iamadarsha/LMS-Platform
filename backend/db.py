@@ -87,14 +87,31 @@ def get_pool() -> ConnectionPool:
         if not url:
             raise RuntimeError("DATABASE_URL is not set")
         # Neon pooled hostnames want pgbouncer-friendly options.
+        # `check=check_connection` pings every connection before checkout so
+        # we never hand out a dead one (Neon closes idle SSL connections).
+        # `max_idle=120` recycles connections proactively.
         _pool = ConnectionPool(
             conninfo=url,
             min_size=1,
             max_size=5,
             kwargs={"row_factory": dict_row, "autocommit": True},
             timeout=15,
+            max_idle=120,
+            check=ConnectionPool.check_connection,
         )
         return _pool
+
+
+def _execute_with_retry(callable_):
+    """Run a DB callable; on SSL/connection error, retry once with a fresh conn."""
+    for attempt in range(2):
+        try:
+            return callable_()
+        except psycopg.OperationalError:
+            if attempt == 0:
+                log.warning("DB op failed (likely idle connection) — retrying")
+                continue
+            raise
 
 
 @contextmanager
@@ -273,48 +290,56 @@ def update_contribution(job_id: str, **fields: Any) -> Optional[ContributionRow]
     sets.append("updated_at = now()")
     values.append(job_id)
     sql = f"UPDATE contributions SET {', '.join(sets)} WHERE id = %s RETURNING *"
-    with conn() as c, c.cursor() as cur:
-        cur.execute(sql, values)
-        row = cur.fetchone()
+    def _do():
+        with conn() as c, c.cursor() as cur:
+            cur.execute(sql, values)
+            return cur.fetchone()
+    row = _execute_with_retry(_do)
     return _row_to_obj(row) if row else None
 
 
 def get_contribution(job_id: str, *, user_id: Optional[str] = None) -> Optional[ContributionRow]:
-    with conn() as c, c.cursor() as cur:
-        if user_id:
-            cur.execute(
-                "SELECT * FROM contributions WHERE id = %s AND user_clerk_id = %s",
-                (job_id, user_id),
-            )
-        else:
-            cur.execute("SELECT * FROM contributions WHERE id = %s", (job_id,))
-        row = cur.fetchone()
+    def _do():
+        with conn() as c, c.cursor() as cur:
+            if user_id:
+                cur.execute(
+                    "SELECT * FROM contributions WHERE id = %s AND user_clerk_id = %s",
+                    (job_id, user_id),
+                )
+            else:
+                cur.execute("SELECT * FROM contributions WHERE id = %s", (job_id,))
+            return cur.fetchone()
+    row = _execute_with_retry(_do)
     return _row_to_obj(row) if row else None
 
 
 def publish_contribution(job_id: str, *, user_id: str) -> Optional[ContributionRow]:
     """Mark a contribution as published. Owner-scoped."""
-    with conn() as c, c.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE contributions
-               SET is_published = true,
-                   published_at = COALESCE(published_at, now()),
-                   updated_at   = now()
-             WHERE id = %s AND user_clerk_id = %s
-         RETURNING *
-            """,
-            (job_id, user_id),
-        )
-        row = cur.fetchone()
+    def _do():
+        with conn() as c, c.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE contributions
+                   SET is_published = true,
+                       published_at = COALESCE(published_at, now()),
+                       updated_at   = now()
+                 WHERE id = %s AND user_clerk_id = %s
+             RETURNING *
+                """,
+                (job_id, user_id),
+            )
+            return cur.fetchone()
+    row = _execute_with_retry(_do)
     return _row_to_obj(row) if row else None
 
 
 def list_contributions(user_id: str, limit: int = 50) -> list[ContributionRow]:
-    with conn() as c, c.cursor() as cur:
-        cur.execute(
-            "SELECT * FROM contributions WHERE user_clerk_id = %s ORDER BY created_at DESC LIMIT %s",
-            (user_id, limit),
-        )
-        rows = cur.fetchall()
+    def _do():
+        with conn() as c, c.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM contributions WHERE user_clerk_id = %s ORDER BY created_at DESC LIMIT %s",
+                (user_id, limit),
+            )
+            return cur.fetchall()
+    rows = _execute_with_retry(_do)
     return [_row_to_obj(r) for r in rows]
