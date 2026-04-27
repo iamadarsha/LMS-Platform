@@ -28,7 +28,9 @@ backend/.venv
 backend/uploads
 backend/__pycache__
 backend/**/__pycache__
-vendor/faster-whisper
+# faster-whisper is vendored into the repo so the transcription pipeline runs
+# without an internet round-trip on first boot. Keep it tracked.
+# vendor/faster-whisper
 
 # Secrets — NEVER commit
 .env
