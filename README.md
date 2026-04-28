@@ -28,6 +28,17 @@
 
 ---
 
+## Recruiter Quick Scan
+
+| Signal | Details |
+|---|---|
+| Product | AI video learning hub that turns uploads into searchable structured knowledge |
+| What it demonstrates | Full-stack product architecture, AI media pipeline design, auth, storage, transcript UX, and developer-experience polish |
+| Differentiator | Combines faster-whisper, Gemini analysis, synced playback, creator studio publishing, and multi-store cloud infrastructure |
+| Stack | React, Vite, FastAPI, Clerk, Supabase, Neon, Cloudflare R2, Upstash Redis, Gemini, faster-whisper |
+
+---
+
 ## 🎯 What is Hyvemind?
 
 Hyvemind is a **dark-themed AI knowledge library** built for teams and individuals who learn by watching. Drop in any how-to video, and within minutes Hyvemind:
