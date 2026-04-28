@@ -14,6 +14,16 @@
 
 [Quick Start](#-quick-start) · [Use Cases](#-who-its-for) · [Architecture](#-architecture) · [Documentation](#-documentation)
 
+<br />
+
+<table>
+<tr>
+<td align="center"><img src="https://raw.githubusercontent.com/iamadarsha/LMS-Platform/main/public/thumbnails/thumb-dashboard.png" width="280" alt="Hyvemind dashboard" /><br/><sub><b>Live dashboard</b></sub></td>
+<td align="center"><img src="https://raw.githubusercontent.com/iamadarsha/LMS-Platform/main/public/thumbnails/thumb-laptop.png" width="280" alt="Synced transcript player" /><br/><sub><b>Synced transcript</b></sub></td>
+<td align="center"><img src="https://raw.githubusercontent.com/iamadarsha/LMS-Platform/main/public/thumbnails/thumb-server.png" width="280" alt="Pipeline ops" /><br/><sub><b>Pipeline ops</b></sub></td>
+</tr>
+</table>
+
 </div>
 
 ---
