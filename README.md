@@ -40,6 +40,22 @@ It's the bridge between *"I'll watch that later"* and *"I already know what's in
 
 ---
 
+## 🧩 Product Snapshot
+
+| Surface | What users see | What is happening underneath |
+|---|---|---|
+| **Learning dashboard** | A polished media library with trending resources, continue-watching rails, favourites, and progress. | Supabase-backed public feed plus local contribution state mapped into one content model. |
+| **Creator studio** | Upload a video, watch pipeline progress, review generated metadata, and publish to the shared library. | FastAPI coordinates ffmpeg, faster-whisper, Gemini, R2 storage, Neon Postgres, and Redis. |
+| **Smart playback** | Native video, CC subtitles, synced transcript, clickable segments, chapters, and durable watch state. | Transcript segments and analysis payloads are normalized into reusable learning artifacts. |
+
+## ✨ Portfolio Highlights
+
+- End-to-end AI media pipeline from upload to searchable, structured learning content.
+- Multi-store architecture across Clerk, Supabase, Neon, Cloudflare R2, and Upstash Redis.
+- One-command setup script that boots frontend and backend cleanly on a fresh Mac.
+
+---
+
 ## ⚡ Quick Start
 
 ### 🍎 On a fresh Mac — one command
